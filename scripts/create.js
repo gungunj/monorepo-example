@@ -7,7 +7,6 @@ const prettier = require('prettier');
 const main = async (pkgName) => {
   const pwd = process.cwd();
   const meta = await getProjectMeta();
-  // const packageName =
   const context = {
     pwd,
     fullName: `@${meta.name}/${pkgName}`,
@@ -15,9 +14,10 @@ const main = async (pkgName) => {
     meta,
     path: resolve(pwd, 'packages', pkgName),
   };
-  await createPackageWithLerna(context);
+  await createPackage(context);
   await adjustPackageJSON(context);
   await appendConfigs(context);
+  await appendSrc(context);
   await appendStyle(context);
   await adjustPlayground(context);
 };
@@ -29,15 +29,22 @@ async function getProjectMeta() {
   return { name, description, keywords, license };
 }
 
-async function createPackageWithLerna({ fullName }) {
-  return promisify(child_process.exec)(`pnpm lerna create ${fullName} -y`);
+async function createPackage({ path, packageName }) {
+  try {
+    await fsp.mkdir(path, { recursive: true });
+    await promisify(child_process.exec)(`pnpm init`, { cwd: path });
+    console.log(`Package ${packageName} created and initialized successfully.`);
+  } catch (err) {
+    console.error('Failed to create package:', err);
+  }
 }
 
-async function adjustPackageJSON({ path, meta }) {
+async function adjustPackageJSON({ path, meta, fullName }) {
   try {
     const packagePath = resolve(path, 'package.json');
     const pkg = JSON.parse(await fsp.readFile(packagePath));
     delete pkg.type;
+    pkg.name = fullName;
     pkg.main = 'dist/index.umd.js';
     pkg.module = 'dist/index.mjs';
     pkg.source = 'src/index.ts';
@@ -109,9 +116,17 @@ async function appendStyle(context) {
   });
 }
 
+async function appendSrc(context) {
+  const { path } = context;
+  await fsp.mkdir(resolve(path, 'src'));
+  await fsp.writeFile(resolve(path, 'src', 'index.ts'), '', {
+    encoding: 'utf-8',
+  });
+}
+
 async function adjustPlayground({ fullName, pwd, packageName }) {
   await promisify(child_process.exec)(
-    `pnpm lerna add ${fullName} --scope playground`,
+    `pnpm install ${fullName} --filter=playground`,
   );
   const tmp = await fsp.readFile(resolve(pwd, 'playground', 'tsconfig.json'), {
     encoding: 'utf-8',

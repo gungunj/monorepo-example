@@ -1,5 +1,5 @@
 {
-  "name": "@mono-repo-example",
+  "name": "mono-repo-example",
   "version": "0.0.1",
   "private": true,
   "description": "base prosemirror editor",
@@ -8,10 +8,10 @@
     "playground"
   ],
   "scripts": {
-    "devadd": "pnpm add -D --ignore-workspace-root-check",
-    "build": "lerna run build --ignore doc",
+    "devadd": "pnpm add -D -W",
+    "build": "pnpm run build --filter '!doc'",
     "dev": "cd playground && pnpm dev",
-    "publish": "pnpm lerna publish",
+    "publish": "",
     "pkgadd": "node scripts/create.js",
     "changelog": "node scripts/changelog.js",
     "changelog:ci": "node scripts/changelog.js from-ci",
@@ -33,7 +33,6 @@
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-react": "^7.31.1",
     "jest": "^28",
-    "lerna": "^8.1.2",
     "lodash.mergewith": "^4.6.2",
     "node-fetch": "2",
     "postcss": "^8.4.16",
